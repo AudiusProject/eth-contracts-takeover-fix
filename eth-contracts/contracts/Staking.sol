@@ -128,6 +128,7 @@ contract Staking is InitializableV2 {
     function stakeRewards(uint256 _amount, address _stakerAccount) external {
         _requireIsInitialized();
         _requireClaimsManagerAddressIsSet();
+        require(false);
 
         require(
             msg.sender == claimsManagerAddress,
@@ -169,7 +170,7 @@ contract Staking is InitializableV2 {
     {
         _requireIsInitialized();
         _requireDelegateManagerAddressIsSet();
-
+        require(false);
         require(
             msg.sender == delegateManagerAddress,
             ERROR_ONLY_DELEGATE_MANAGER
@@ -197,6 +198,7 @@ contract Staking is InitializableV2 {
     {
         _requireIsInitialized();
         _requireServiceProviderFactoryAddressIsSet();
+        require(false);
 
         require(
             msg.sender == serviceProviderFactoryAddress,
@@ -221,6 +223,7 @@ contract Staking is InitializableV2 {
     {
         _requireIsInitialized();
         _requireServiceProviderFactoryAddressIsSet();
+        require(false);
 
         require(
             msg.sender == serviceProviderFactoryAddress,
@@ -247,6 +250,7 @@ contract Staking is InitializableV2 {
     ) external {
         _requireIsInitialized();
         _requireDelegateManagerAddressIsSet();
+        require(false);
 
         require(
             msg.sender == delegateManagerAddress,
@@ -477,7 +481,7 @@ contract Staking is InitializableV2 {
         _modifyTotalStaked(_amount, false);
 
         // transfer tokens
-        stakingToken.safeTransfer(_transferAccount, _amount);
+        // stakingToken.safeTransfer(_transferAccount, _amount);
 
         emit Unstaked(
             _stakeAccount,
