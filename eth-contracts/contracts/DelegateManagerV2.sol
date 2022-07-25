@@ -207,6 +207,7 @@ contract DelegateManagerV2 is InitializableV2 {
 
         // 24hr * 60min/hr * 60sec/min / ~13 sec/block = 6646 blocks
         removeDelegatorEvalDuration = 6646;
+        emit RemoveDelegatorEvalDurationUpdated(removeDelegatorEvalDuration);
 
         // update ServiceProviderFactory address
         serviceProviderFactoryAddress = 0xD17A9bc90c582249e211a4f4b16721e7f65156c8;
