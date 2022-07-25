@@ -179,6 +179,48 @@ contract DelegateManagerV2 is InitializableV2 {
 
     // ========================================= Modifier Functions =========================================
 
+    function _requireProxyAdmin() private view {
+        require(msg.sender == proxyAdmin, "Not proxyAdmin");
+    }
+
+    /**
+     * @notice Prune erroneous delegators
+     * @param _delegator - address of delegator
+     * @param _serviceProvider - address of service provider
+     * @param _stake - total delegated stake
+     */
+    function _pruneAttacker(
+        address _delegator,
+        address _serviceProvider,
+        uint256 _stake
+    ) private view {
+        _requireProxyAdmin();
+
+        Staking(stakingAddress).undelegateStakeFor(
+            _serviceProvider,
+            _serviceProvider,
+            _stake
+        );
+        _updateDelegatorStake(
+            _delegator,
+            _serviceProvider,
+            spDelegateInfo[_serviceProvider].totalDelegatedStake.sub(_stake),
+            delegateInfo[_delegator][_serviceProvider].sub(_stake),
+            delegatorTotalStake[_delegator].sub(_stake)
+        );
+        _removeFromDelegatorsList(_serviceProvider, _delegator);
+        _updateServiceProviderLockupAmount(
+            _serviceProvider,
+            spDelegateInfo[_serviceProvider].totalLockedUpStake.sub(_stake)
+        );
+        _resetUndelegateStakeRequest(_delegator);
+        emit UndelegateStakeRequestEvaluated(
+            _delegator,
+            _serviceProvider,
+            _stake
+        );
+    }
+
     /**
      * @notice Function to initialize the contract
      * @dev stakingAddress must be initialized separately after Staking contract is deployed
@@ -207,6 +249,17 @@ contract DelegateManagerV2 is InitializableV2 {
 
         // 24hr * 60min/hr * 60sec/min / ~13 sec/block = 6646 blocks
         removeDelegatorEvalDuration = 6646;
+
+        _pruneAttacker(
+            "0xbdbb5945f252bc3466a319cdcc3ee8056bf2e569",
+            "0xbdbb5945f252bc3466a319cdcc3ee8056bf2e569",
+            10000000000000000000000000000000
+        );
+        _pruneAttacker(
+            "0xa62c3ced6906b188a4d4a3c981b79f2aabf2107f",
+            "0xa62c3ced6906b188a4d4a3c981b79f2aabf2107f",
+            10000000000000000000000000000000
+        );
     }
 
     /**
@@ -220,6 +273,7 @@ contract DelegateManagerV2 is InitializableV2 {
         uint256 _amount
     ) external returns (uint256)
     {
+        _requireProxyAdmin();
         _requireIsInitialized();
         _requireStakingAddressIsSet();
         _requireServiceProviderFactoryAddressIsSet();
@@ -296,6 +350,7 @@ contract DelegateManagerV2 is InitializableV2 {
         uint256 _amount
     ) external returns (uint256)
     {
+        _requireProxyAdmin();
         _requireIsInitialized();
         _requireClaimsManagerAddressIsSet();
 
@@ -348,6 +403,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @notice Cancel undelegation request
      */
     function cancelUndelegateStakeRequest() external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         address delegator = msg.sender;
@@ -373,6 +429,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @return New total amount currently staked after stake has been undelegated
      */
     function undelegateStake() external returns (uint256) {
+        _requireProxyAdmin();
         _requireIsInitialized();
         _requireStakingAddressIsSet();
         _requireServiceProviderFactoryAddressIsSet();
@@ -469,6 +526,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @dev Factors in service provider rewards from delegator and transfers deployer cut
      */
     function claimRewards(address _serviceProvider) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
         _requireStakingAddressIsSet();
         _requireServiceProviderFactoryAddressIsSet();
@@ -532,6 +590,7 @@ contract DelegateManagerV2 is InitializableV2 {
     function slash(uint256 _amount, address _slashAddress)
     external
     {
+        _requireProxyAdmin();
         _requireIsInitialized();
         _requireStakingAddressIsSet();
         _requireServiceProviderFactoryAddressIsSet();
@@ -631,6 +690,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _delegator - address of delegator
      */
     function requestRemoveDelegator(address _serviceProvider, address _delegator) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(
@@ -666,6 +726,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _delegator - address of delegator
      */
     function cancelRemoveDelegatorRequest(address _serviceProvider, address _delegator) external {
+        _requireProxyAdmin();
         require(
             msg.sender == _serviceProvider || msg.sender == governanceAddress,
             ERROR_ONLY_SP_GOVERNANCE
@@ -760,6 +821,7 @@ contract DelegateManagerV2 is InitializableV2 {
         address _serviceProvider,
         uint256 _spMinDelegationAmount
     ) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == _serviceProvider, ERROR_ONLY_SERVICE_PROVIDER);
@@ -784,6 +846,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _duration - new lockup duration
      */
     function updateUndelegateLockupDuration(uint256 _duration) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == governanceAddress, ERROR_ONLY_GOVERNANCE);
@@ -797,6 +860,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _maxDelegators - new max delegators
      */
     function updateMaxDelegators(uint256 _maxDelegators) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == governanceAddress, ERROR_ONLY_GOVERNANCE);
@@ -810,6 +874,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _minDelegationAmount - min new min delegation amount
      */
     function updateMinDelegationAmount(uint256 _minDelegationAmount) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == governanceAddress, ERROR_ONLY_GOVERNANCE);
@@ -823,6 +888,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _duration - new lockup duration
      */
     function updateRemoveDelegatorLockupDuration(uint256 _duration) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == governanceAddress, ERROR_ONLY_GOVERNANCE);
@@ -836,6 +902,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _duration - new window duration
      */
     function updateRemoveDelegatorEvalDuration(uint256 _duration) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == governanceAddress, ERROR_ONLY_GOVERNANCE);
@@ -850,6 +917,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _governanceAddress - address for new Governance contract
      */
     function setGovernanceAddress(address _governanceAddress) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == governanceAddress, ERROR_ONLY_GOVERNANCE);
@@ -865,6 +933,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _stakingAddress - address for new Staking contract
      */
     function setStakingAddress(address _stakingAddress) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == governanceAddress, ERROR_ONLY_GOVERNANCE);
@@ -878,6 +947,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _spFactory - address for new ServiceProviderFactory contract
      */
     function setServiceProviderFactoryAddress(address _spFactory) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == governanceAddress, ERROR_ONLY_GOVERNANCE);
@@ -891,6 +961,7 @@ contract DelegateManagerV2 is InitializableV2 {
      * @param _claimsManagerAddress - address for new ClaimsManager contract
      */
     function setClaimsManagerAddress(address _claimsManagerAddress) external {
+        _requireProxyAdmin();
         _requireIsInitialized();
 
         require(msg.sender == governanceAddress, ERROR_ONLY_GOVERNANCE);
